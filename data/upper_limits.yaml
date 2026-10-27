@@ -1,0 +1,21 @@
+# Tolerable Upper Intake Levels (adults 19+, from supplements) used by the stack checker.
+# Source: US National Academies DRI tables as summarised by NIH Office of Dietary Supplements.
+# PROTOTYPE: review with a clinical lead; pregnancy/age-specific limits are not modelled yet.
+#
+# match: regex against the ingredient name. Units are normalised to `unit` before comparing.
+nutrients:
+  vitamin_a_retinol: {match: "retinol|retinyl|vitamin a(?! *\\(as beta)", limit: 3000, unit: mcg, note: "preformed vitamin A only; beta-carotene excluded"}
+  vitamin_d:         {match: "vitamin d|cholecalciferol|ergocalciferol", limit: 100, unit: mcg, note: "100 mcg = 4000 IU"}
+  vitamin_e:         {match: "vitamin e|tocopher", limit: 1000, unit: mg}
+  vitamin_c:         {match: "vitamin c|ascorb", limit: 2000, unit: mg}
+  vitamin_b6:        {match: "vitamin b6|pyridox", limit: 100, unit: mg}
+  niacin:            {match: "vitamin b3|niacin|nicotin(ic|amide)(?! mononucleotide)", limit: 35, unit: mg, note: "flushing threshold for supplemental niacin"}
+  folic_acid:        {match: "folic|folate|methylfolate", limit: 1000, unit: mcg}
+  calcium:           {match: "calcium", limit: 2500, unit: mg, note: "2000 mg for adults over 50"}
+  magnesium:         {match: "magnesium", limit: 350, unit: mg, note: "supplemental magnesium only"}
+  zinc:              {match: "\\bzinc", limit: 40, unit: mg}
+  iron:              {match: "\\biron\\b|ferrous|ferric", limit: 45, unit: mg}
+  selenium:          {match: "selenium", limit: 400, unit: mcg}
+  iodine:            {match: "iodine|kelp", limit: 1100, unit: mcg}
+  copper:            {match: "copper", limit: 10, unit: mg}
+  manganese:         {match: "manganese", limit: 11, unit: mg}

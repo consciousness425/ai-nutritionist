@@ -1,0 +1,404 @@
+# Safety knowledge base for the deterministic eligibility engine (nutribot/safety.py).
+#
+# !! PROTOTYPE CONTENT. Every rule here is drawn from product labels or widely cited
+# !! interaction references, but it MUST be reviewed and signed off by a pharmacist or
+# !! clinical lead before production use. Rules are data so they can be versioned,
+# !! diffed and audited without touching code or prompts.
+#
+# Levels (most to least severe):
+#   EXCLUDED      never recommended to this person
+#   DOCTOR_FIRST  not recommended by the bot; the user is told to get their doctor's OK
+#   CAUTION       may be recommended, the warning is shown alongside it
+#
+# Risk factors are the keys the profile is reduced to (see nutribot/profile.py):
+#   life stage : pregnancy, breastfeeding, trying_to_conceive, under_18
+#   conditions : liver_disease, kidney_disease, kidney_stones, bleeding_disorder, hypertension,
+#                low_blood_pressure, heart_disease, diabetes, thyroid_disorder, autoimmune_disease,
+#                epilepsy, migraine, hormone_sensitive_condition, hemochromatosis, immunocompromised,
+#                gallbladder_disease, mental_health_condition, upcoming_surgery
+#   medications: anticoagulant, antidepressant, immunosuppressant, diabetes_medication,
+#                thyroid_medication, blood_pressure_medication, statin, sedative,
+#                hormonal_medication, chemotherapy
+#   allergies  : allergy:fish, allergy:shellfish, allergy:soy, allergy:dairy,
+#                allergy:wheat_gluten, allergy:nuts, allergy:egg
+#   wildcards  : any_medication, any_condition (set whenever the person has any)
+
+# ---------------------------------------------------------------------------------------
+# 1. Ingredient rules: matched (regex, case-insensitive) against title + ingredient lines.
+# ---------------------------------------------------------------------------------------
+ingredient_rules:
+  - id: he_shou_wu
+    match: "he shou wu|polygonum multiflorum|fo-ti"
+    why: "He Shou Wu (Polygonum multiflorum) has been linked to liver injury and isn't advised with blood thinners or around surgery"
+    risks:
+      liver_disease: EXCLUDED
+      pregnancy: EXCLUDED
+      breastfeeding: EXCLUDED
+      trying_to_conceive: DOCTOR_FIRST
+      anticoagulant: DOCTOR_FIRST
+      upcoming_surgery: EXCLUDED
+
+  - id: ginkgo
+    match: "ginkgo"
+    why: "Ginkgo may increase bleeding risk and can lower the seizure threshold"
+    risks:
+      anticoagulant: EXCLUDED
+      bleeding_disorder: EXCLUDED
+      upcoming_surgery: EXCLUDED
+      epilepsy: DOCTOR_FIRST
+      pregnancy: EXCLUDED
+      breastfeeding: DOCTOR_FIRST
+      antidepressant: DOCTOR_FIRST
+
+  - id: vitamin_k
+    match: "vitamin k|phylloquinone|menaquinone|mk-7"
+    why: "Vitamin K directly counteracts warfarin-type anticoagulants"
+    risks:
+      anticoagulant: EXCLUDED
+
+  - id: omega3_fish
+    match: "fish oil|fish collagen|marine collagen|anchov|sardine|salmon|cod liver|tuna|krill|fish gelatin|marine fish"
+    why: "Fish-derived ingredient; high-dose omega-3 also has a mild blood-thinning effect"
+    risks:
+      allergy:fish: EXCLUDED
+      anticoagulant: DOCTOR_FIRST
+      bleeding_disorder: DOCTOR_FIRST
+      upcoming_surgery: DOCTOR_FIRST
+
+  - id: shellfish
+    match: "shellfish|crustacean|shrimp|prawn|crab|lobster|chitosan|green[- ]lipped mussel|oyster"
+    why: "Shellfish-derived ingredient"
+    risks:
+      allergy:shellfish: EXCLUDED
+
+  - id: glucosamine
+    match: "glucosamine"
+    why: "Glucosamine is often shellfish-derived, may affect blood sugar and may potentiate warfarin"
+    risks:
+      allergy:shellfish: DOCTOR_FIRST
+      anticoagulant: DOCTOR_FIRST
+      diabetes: CAUTION
+
+  - id: melatonin
+    match: "melatonin"
+    why: "Melatonin is a hormone: sedating, and not studied for use in pregnancy or children"
+    risks:
+      pregnancy: EXCLUDED
+      breastfeeding: EXCLUDED
+      trying_to_conceive: DOCTOR_FIRST
+      under_18: EXCLUDED
+      autoimmune_disease: DOCTOR_FIRST
+      immunosuppressant: DOCTOR_FIRST
+      sedative: DOCTOR_FIRST
+      antidepressant: DOCTOR_FIRST
+      epilepsy: DOCTOR_FIRST
+      anticoagulant: DOCTOR_FIRST
+
+  - id: ashwagandha
+    match: "ashwagandha|withania"
+    why: "Ashwagandha may stimulate the thyroid and immune system, is sedating, and is not advised in pregnancy"
+    risks:
+      pregnancy: EXCLUDED
+      breastfeeding: EXCLUDED
+      trying_to_conceive: DOCTOR_FIRST
+      thyroid_disorder: DOCTOR_FIRST
+      thyroid_medication: DOCTOR_FIRST
+      autoimmune_disease: DOCTOR_FIRST
+      immunosuppressant: DOCTOR_FIRST
+      sedative: DOCTOR_FIRST
+      liver_disease: DOCTOR_FIRST
+      upcoming_surgery: DOCTOR_FIRST
+
+  - id: placenta
+    match: "placenta"
+    why: "Placenta extracts are hormonally active animal products"
+    risks:
+      pregnancy: EXCLUDED
+      breastfeeding: EXCLUDED
+      trying_to_conceive: EXCLUDED
+      hormone_sensitive_condition: EXCLUDED
+      hormonal_medication: DOCTOR_FIRST
+      under_18: EXCLUDED
+
+  - id: phytoestrogens
+    match: "isoflavone|red clover|black cohosh|dong quai|angelica sinensis|wild yam|evening primrose|chasteberry|vitex"
+    why: "Contains herbs with hormone-like (phyto-oestrogenic) activity"
+    risks:
+      pregnancy: EXCLUDED
+      breastfeeding: DOCTOR_FIRST
+      trying_to_conceive: DOCTOR_FIRST
+      hormone_sensitive_condition: EXCLUDED
+      hormonal_medication: DOCTOR_FIRST
+      anticoagulant: DOCTOR_FIRST
+
+  - id: ginseng
+    match: "ginseng|panax"
+    why: "Ginseng may affect blood sugar, blood pressure and anticoagulants"
+    risks:
+      pregnancy: EXCLUDED
+      breastfeeding: DOCTOR_FIRST
+      anticoagulant: DOCTOR_FIRST
+      diabetes_medication: DOCTOR_FIRST
+      hypertension: DOCTOR_FIRST
+      antidepressant: DOCTOR_FIRST
+      hormone_sensitive_condition: DOCTOR_FIRST
+
+  - id: male_hormone_herbs
+    match: "tongkat|eurycoma|tribulus|horny goat|epimedium|maca|fenugreek|saw palmetto"
+    why: "Contains herbs marketed for hormonal effects"
+    risks:
+      pregnancy: EXCLUDED
+      breastfeeding: EXCLUDED
+      hormone_sensitive_condition: EXCLUDED
+      hormonal_medication: DOCTOR_FIRST
+      under_18: EXCLUDED
+      diabetes_medication: CAUTION
+      anticoagulant: DOCTOR_FIRST
+
+  - id: curcumin
+    match: "turmeric|curcum"
+    why: "Curcumin may increase bleeding risk and aggravate gallbladder disease"
+    risks:
+      anticoagulant: DOCTOR_FIRST
+      bleeding_disorder: DOCTOR_FIRST
+      gallbladder_disease: EXCLUDED
+      upcoming_surgery: DOCTOR_FIRST
+      pregnancy: DOCTOR_FIRST
+      diabetes_medication: CAUTION
+
+  - id: lingzhi
+    match: "lingzhi|reishi|ganoderma|cordyceps"
+    why: "Medicinal mushrooms may affect clotting, blood pressure, blood sugar and immunity"
+    risks:
+      anticoagulant: DOCTOR_FIRST
+      bleeding_disorder: DOCTOR_FIRST
+      upcoming_surgery: EXCLUDED
+      low_blood_pressure: DOCTOR_FIRST
+      immunosuppressant: DOCTOR_FIRST
+      autoimmune_disease: DOCTOR_FIRST
+      pregnancy: DOCTOR_FIRST
+      breastfeeding: DOCTOR_FIRST
+
+  - id: green_tea_caffeine
+    match: "green tea|caffeine|guarana|coffee bean|garcinia"
+    why: "Green tea extract / caffeine / weight-loss actives: liver, heart-rate and blood pressure effects"
+    risks:
+      liver_disease: DOCTOR_FIRST
+      pregnancy: DOCTOR_FIRST
+      breastfeeding: DOCTOR_FIRST
+      hypertension: CAUTION
+      heart_disease: DOCTOR_FIRST
+      antidepressant: CAUTION
+
+  - id: laxatives
+    match: "senna|cascara|aloe latex|rhubarb root"
+    why: "Stimulant laxative"
+    risks:
+      pregnancy: EXCLUDED
+      breastfeeding: EXCLUDED
+      kidney_disease: DOCTOR_FIRST
+      under_18: EXCLUDED
+
+  - id: milk_thistle
+    match: "milk thistle|silymarin|silybum"
+    why: "Milk thistle may affect blood sugar and drug metabolism"
+    risks:
+      diabetes_medication: CAUTION
+      hormone_sensitive_condition: DOCTOR_FIRST
+      pregnancy: DOCTOR_FIRST
+
+  - id: nmn
+    match: "\\bnmn\\b|nicotinamide mononucleotide|\\bnad\\+?"
+    why: "NMN has little safety data outside healthy adults"
+    risks:
+      pregnancy: EXCLUDED
+      breastfeeding: EXCLUDED
+      trying_to_conceive: DOCTOR_FIRST
+      under_18: EXCLUDED
+      chemotherapy: EXCLUDED
+
+  - id: iron
+    match: "\\biron\\b|ferrous|ferric"
+    why: "Iron accumulates in haemochromatosis and interferes with thyroid medication absorption"
+    risks:
+      hemochromatosis: EXCLUDED
+      thyroid_medication: CAUTION
+
+  - id: calcium
+    match: "calcium"
+    why: "Calcium reduces absorption of thyroid medication; high intakes are a concern with kidney stones"
+    risks:
+      kidney_stones: DOCTOR_FIRST
+      kidney_disease: DOCTOR_FIRST
+      thyroid_medication: CAUTION
+
+  - id: magnesium_potassium
+    match: "magnesium|potassium"
+    why: "Magnesium and potassium are cleared by the kidneys"
+    risks:
+      kidney_disease: DOCTOR_FIRST
+
+  - id: vitamin_a_retinol
+    match: "retinol|retinyl|vitamin a acetate|vitamin a palmitate"
+    why: "Preformed vitamin A (retinol) is teratogenic at high doses"
+    risks:
+      pregnancy: DOCTOR_FIRST
+      trying_to_conceive: DOCTOR_FIRST
+      liver_disease: DOCTOR_FIRST
+
+  - id: iodine_kelp
+    match: "iodine|kelp|seaweed"
+    why: "Iodine affects thyroid function"
+    risks:
+      thyroid_disorder: DOCTOR_FIRST
+      thyroid_medication: DOCTOR_FIRST
+
+  - id: probiotics
+    match: "probiotic|lactobacillus|bifidobacter|saccharomyces"
+    why: "Live microorganisms carry an infection risk when immunity is severely suppressed"
+    risks:
+      immunocompromised: DOCTOR_FIRST
+      immunosuppressant: DOCTOR_FIRST
+      chemotherapy: DOCTOR_FIRST
+
+  - id: soy
+    match: "\\bsoy|soya"
+    why: "Contains soy"
+    risks:
+      allergy:soy: EXCLUDED
+
+  - id: dairy
+    match: "\\bmilk\\b(?! thistle)|lactose|whey|casein|dairy|colostrum"
+    why: "Contains milk-derived ingredients"
+    risks:
+      allergy:dairy: EXCLUDED
+
+  - id: wheat_gluten
+    match: "wheat|gluten|barley|\\brye\\b"
+    why: "Contains wheat/gluten-containing grains"
+    risks:
+      allergy:wheat_gluten: EXCLUDED
+
+  - id: nuts
+    match: "almond|cashew|walnut|hazelnut|peanut|pistachio|macadamia"
+    why: "Contains nuts"
+    risks:
+      allergy:nuts: EXCLUDED
+
+  - id: egg
+    match: "\\begg\\b|eggshell membrane|albumen"
+    why: "Contains egg-derived ingredients"
+    risks:
+      allergy:egg: EXCLUDED
+
+  - id: bilberry_high_polyphenol
+    match: "bilberry|vaccinium myrtillus|grape seed|resveratrol|garlic|nattokinase"
+    why: "May have a mild antiplatelet (blood-thinning) effect"
+    risks:
+      anticoagulant: CAUTION
+      upcoming_surgery: DOCTOR_FIRST
+
+# ---------------------------------------------------------------------------------------
+# 2. Label rules: regexes over the product's own CAUTION text (joined, lowercased).
+#    The manufacturer's label is a primary source; it is never overridden downwards.
+# ---------------------------------------------------------------------------------------
+label_rules:
+  - match: "do not (use|take|consume)[^.]{0,80}pregnan"
+    risks: {pregnancy: EXCLUDED}
+  - match: "do not (use|take|consume)[^.]{0,80}(breastfeed|nursing|lactat)"
+    risks: {breastfeeding: EXCLUDED}
+  - match: "(consult|seek medical advice|should consult)[^.]{0,120}(pregnan)|pregnant[^.]{0,80}should consult"
+    risks: {pregnancy: DOCTOR_FIRST, trying_to_conceive: DOCTOR_FIRST}
+  - match: "(consult|seek medical advice|should consult)[^.]{0,120}(nursing|breastfeed|lactat)|nursing women[^.]{0,80}should consult"
+    risks: {breastfeeding: DOCTOR_FIRST}
+  - match: "do not (use|take|consume)[^.]{0,60}(blood thinning|warfarin|anticoagul)"
+    risks: {anticoagulant: EXCLUDED}
+  - match: "(consult|seek medical advice|without medical advice)[^.]{0,80}(blood thinning|warfarin|anticoagul)|warfarin therapy"
+    risks: {anticoagulant: DOCTOR_FIRST}
+  - match: "bleeding tendency|increase the risk of bleeding"
+    risks: {bleeding_disorder: DOCTOR_FIRST, anticoagulant: DOCTOR_FIRST}
+  - match: "(operation|surgery)"
+    risks: {upcoming_surgery: EXCLUDED}
+  - match: "immunosuppress"
+    risks: {immunosuppressant: EXCLUDED}
+  - match: "(consult|seek)[^.]{0,120}(taking (any )?medication|under medication|prescription medication|taking medication)|people under medication|if taking prescription medication"
+    risks: {any_medication: DOCTOR_FIRST}
+  - match: "(consult|seek)[^.]{0,120}medical condition"
+    risks: {any_condition: DOCTOR_FIRST}
+  - match: "hormonal disorder"
+    risks: {hormone_sensitive_condition: DOCTOR_FIRST}
+  - match: "diabetes"
+    risks: {diabetes: DOCTOR_FIRST}
+  - match: "liver (or kidney )?disease|liver problems"
+    risks: {liver_disease: DOCTOR_FIRST}
+  - match: "kidney disease"
+    risks: {kidney_disease: DOCTOR_FIRST}
+  - match: "seizure|epilep"
+    risks: {epilepsy: DOCTOR_FIRST}
+  - match: "migraine"
+    risks: {migraine: DOCTOR_FIRST}
+  - match: "depress"
+    risks: {mental_health_condition: DOCTOR_FIRST}
+  - match: "allergic to (marine )?fish"
+    risks: {allergy:fish: EXCLUDED}
+  - match: "contains:?[^.]{0,40}\\bsoy"
+    risks: {allergy:soy: EXCLUDED}
+  - match: "contains:?[^.]{0,40}(dairy|milk)"
+    risks: {allergy:dairy: EXCLUDED}
+  - match: "driving|operating machinery|use machinery"
+    risks: {any: CAUTION}
+    note: "Can cause drowsiness - don't drive or operate machinery after taking it"
+  - match: "not recommended for prolonged consumption|beyond 4 weeks"
+    risks: {any: CAUTION}
+    note: "Label says it is for short-term use only"
+  - match: "copper deficiency"
+    risks: {any: CAUTION}
+    note: "Long-term zinc supplementation can cause copper deficiency"
+  - match: "adult supervision"
+    risks: {under_18: CAUTION}
+    note: "Children should only take it under adult supervision"
+
+# ---------------------------------------------------------------------------------------
+# 3. Normalisation: free-text conditions / medications / allergies -> risk factors.
+#    Anything that doesn't match is kept as "unrecognised" and handled fail-closed.
+# ---------------------------------------------------------------------------------------
+condition_synonyms:
+  liver_disease: "liver|hepat|cirrhosis|fatty liver"
+  kidney_disease: "kidney disease|renal|ckd|dialysis|kidney failure"
+  kidney_stones: "kidney stone|renal calculi"
+  bleeding_disorder: "bleeding disorder|haemophilia|hemophilia|von willebrand|easy bruising|low platelet"
+  hypertension: "hypertension|high blood pressure"
+  low_blood_pressure: "low blood pressure|hypotension"
+  heart_disease: "heart|cardiac|arrhythmia|atrial fibrillation|afib|angina|coronary|heart failure"
+  diabetes: "diabet|blood sugar|insulin resistance|prediabet"
+  thyroid_disorder: "thyroid|hashimoto|graves"
+  autoimmune_disease: "autoimmune|lupus|rheumatoid|multiple sclerosis|psoriasis|crohn|coeliac|celiac"
+  epilepsy: "epilep|seizure"
+  migraine: "migraine"
+  hormone_sensitive_condition: "breast cancer|ovarian cancer|uterine cancer|prostate cancer|endometriosis|fibroid|pcos|hormone.?sensitive|hormonal disorder"
+  hemochromatosis: "ha?emochromatosis|iron overload"
+  immunocompromised: "immunocompromised|hiv|transplant|weak immune|neutropenia"
+  gallbladder_disease: "gallbladder|gallstone|bile duct"
+  mental_health_condition: "depress|bipolar|schizo|anxiety disorder|mental health"
+  upcoming_surgery: "surgery|operation"
+
+medication_synonyms:
+  anticoagulant: "warfarin|coumadin|heparin|apixaban|eliquis|rivaroxaban|xarelto|dabigatran|edoxaban|clopidogrel|plavix|aspirin|ticagrelor|blood thinn|anticoag|antiplatelet"
+  antidepressant: "ssri|snri|sertraline|fluoxetine|escitalopram|citalopram|paroxetine|venlafaxine|duloxetine|mirtazapine|bupropion|amitriptyline|antidepress|maoi|lithium"
+  immunosuppressant: "immunosuppress|tacrolimus|cyclosporin|ciclosporin|mycophenolate|azathioprine|methotrexate|prednis|steroid|biologic"
+  diabetes_medication: "metformin|insulin|gliclazide|glipizide|sitagliptin|empagliflozin|dapagliflozin|semaglutide|ozempic|liraglutide|diabetes med"
+  thyroid_medication: "levothyroxine|thyroxine|eltroxin|carbimazole|methimazole|thyroid med"
+  blood_pressure_medication: "amlodipine|lisinopril|losartan|valsartan|perindopril|bisoprolol|atenolol|metoprolol|hydrochlorothiazide|blood pressure med|beta.?blocker|ace inhibitor"
+  statin: "statin|atorvastatin|simvastatin|rosuvastatin|lipitor|crestor|cholesterol med"
+  sedative: "benzodiazep|diazepam|lorazepam|alprazolam|zolpidem|sleeping pill|sedative|clonazepam"
+  hormonal_medication: "contracepti|birth control|the pill|hrt|hormone replacement|tamoxifen|letrozole|anastrozole|estrogen|oestrogen|progesterone|testosterone"
+  chemotherapy: "chemo|cancer treatment|oncology"
+
+allergy_synonyms:
+  fish: "(?<!shell)fish|seafood"
+  shellfish: "shellfish|shrimp|prawn|crab|lobster|seafood|crustacean|mollusc"
+  soy: "soy|soya"
+  dairy: "dairy|milk|lactose|whey|casein"
+  wheat_gluten: "wheat|gluten|coeliac|celiac"
+  nuts: "nut|peanut|almond|cashew|walnut"
+  egg: "egg"

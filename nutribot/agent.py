@@ -17,7 +17,7 @@ import anthropic
 
 from . import guardrails
 from .catalog import Catalog
-from .config import AGENT_EFFORT, AGENT_MODEL, MAX_AGENT_STEPS
+from .config import AGENT_EFFORT, AGENT_MODEL, MAX_AGENT_STEPS, make_client
 from .prompts import MEDICAL_ADVICE_NOTE, OFF_TOPIC_NOTE, REVISION_NOTE, SYSTEM_PROMPT
 from .tools import TOOLS, Session, run_tool
 
@@ -35,7 +35,7 @@ class TurnResult:
 
 class NutriBot:
     def __init__(self, client: anthropic.Anthropic | None = None, catalog: Catalog | None = None):
-        self.client = client or anthropic.Anthropic()
+        self.client = client or make_client()
         self.catalog = catalog or Catalog.load()
 
     def new_session(self) -> Session:

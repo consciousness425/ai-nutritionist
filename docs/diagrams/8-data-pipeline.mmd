@@ -1,0 +1,9 @@
+flowchart LR
+    S1[Shopify /products.json<br/>title, price, tags, variants] --> M[scripts/scrape.py]
+    S2[Product pages<br/>INGREDIENTS / DOSAGE /<br/>CAUTION / NO ADDED tabs] --> M
+    S3[Collections<br/>halal, vegan, children,<br/>pregnant-support] --> M
+    M --> J[(data/products.json)]
+    J --> P[catalog.py<br/>parse actives + doses,<br/>servings/day, diet,<br/>group bundles]
+    P --> IDX[Search index]
+    P --> ENG[Safety engine]
+    KB[safety_rules.yaml<br/>upper_limits.yaml<br/>pharmacist-owned in production] --> ENG

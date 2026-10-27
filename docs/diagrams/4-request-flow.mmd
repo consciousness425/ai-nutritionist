@@ -1,0 +1,16 @@
+flowchart LR
+    U[User<br/>web / app] --> API[FastAPI<br/>/api/chat]
+    API --> G1{{Emergency regex}}
+    G1 -- match --> E[Canned reply:<br/>call 995 / SOS 1767]
+    G1 -- no --> T[Triage<br/>Claude Haiku 5.5]
+    T -- emergency --> E
+    T -- in scope / medical advice / off topic --> A[Agent loop<br/>Claude Opus 5.5 + tools]
+    A <--> TOOLS[Tools]
+    TOOLS --> CAT[(Catalogue +<br/>search index)]
+    TOOLS --> SAFE[Safety engine<br/>rules over label + KB]
+    TOOLS --> PROF[(User profile)]
+    A --> R[Output review<br/>Claude Haiku 5.5]
+    R -- pass --> OUT[Reply + product cards]
+    R -- revise once --> A
+    R -- fails twice --> FB[Safe fallback reply]
+    OUT --> U

@@ -1,0 +1,31 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant S as Server
+    participant H as Haiku 5.5 (guards)
+    participant O as Opus 5.5 (agent)
+    participant T as Tools + safety engine
+
+    U->>S: "I'm on warfarin, any supplement for thinning hair?"
+    S->>S: emergency regex (no match)
+    S->>H: triage(message, recent history)
+    H-->>S: in_scope
+    S->>O: history + message (cached system prompt + tools)
+    O->>T: update_user_profile(medications=["warfarin"], sex="male")
+    T-->>O: risk factors [anticoagulant], still missing: conditions + allergies
+    O-->>S: asks the two missing screening questions
+    S->>H: review(draft)
+    H-->>S: pass
+    S-->>U: question
+    U->>S: "No other conditions, no allergies"
+    S->>O: ...
+    O->>T: update_user_profile(conditions=[none], allergies=[none])
+    O->>T: search_products("hair growth biotin")
+    T-->>O: suitable[...], not_suitable[Crown Care Hair Food: ginkgo + vitamin K + He Shou Wu]
+    O->>T: compare_products([...])
+    O->>T: recommend_products([...])
+    T-->>O: accepted / rejected (re-checked in code)
+    O-->>S: reply explaining choice and why Hair Food is excluded
+    S->>H: review(draft, not-recommendable list)
+    H-->>S: pass
+    S-->>U: reply + product cards with warnings

@@ -1,0 +1,31 @@
+flowchart LR
+    subgraph FE["Frontend"]
+        direction TB
+        F1["React 19"] --- F2["TypeScript 5.9"] --- F3["Vite 6"] --- F4["react-markdown"]
+    end
+    subgraph BE["Backend"]
+        direction TB
+        B1["Python 3.12"] --- B2["FastAPI + Uvicorn"] --- B3["Pydantic 2"] --- B4["PyYAML"]
+    end
+    subgraph AI["AI layer"]
+        direction TB
+        A1["Anthropic Python SDK<br/>hand-written tool loop"] --- A2["Claude Opus 5.5<br/>agent"] --- A3["Claude Haiku 5.5<br/>guards, structured output"] --- A4["Claude Code CLI<br/>optional local backend"]
+    end
+    subgraph DATA["Data & search"]
+        direction TB
+        D1["Storefront scraper<br/>Python stdlib"] --- D2["JSON catalogue"] --- D3["YAML rule files"] --- D4["In-memory BM25"]
+    end
+    subgraph QA["Quality"]
+        direction TB
+        Q1["pytest<br/>31 unit tests"] --- Q2["Scenario evals<br/>checks + LLM judge"]
+    end
+    subgraph PROD["Planned for production"]
+        direction TB
+        P1["Postgres + pgvector<br/>hybrid search"] --- P2["Redis sessions"] --- P3["OpenTelemetry"] --- P4["Message Batches API<br/>label enrichment"]
+    end
+    FE -- "HTTP / JSON" --> BE
+    BE --> AI
+    BE --> DATA
+    QA -.-> BE
+    PROD -.-> BE
+    style PROD stroke-dasharray: 5 5

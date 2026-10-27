@@ -1,0 +1,16 @@
+flowchart TD
+    P[Product] --> K[Ingredient KB rules<br/>30 ingredients x risk factors]
+    P --> L[Label rules<br/>regex over the product's CAUTION text]
+    PR[User profile] --> RF[Risk factors<br/>pregnancy, anticoagulant, liver_disease,<br/>allergy:fish, under_18, ...]
+    RF --> K
+    RF --> L
+    RF --> POL[Policies]
+    P --> POL
+    K --> V[Findings]
+    L --> V
+    POL --> V
+    V --> MAX{Most severe level}
+    MAX --> EX[EXCLUDED<br/>never recommended]
+    MAX --> DF[DOCTOR_FIRST<br/>not recommended; tell the user to ask their doctor]
+    MAX --> CA[CAUTION<br/>recommendable, warning shown on the card]
+    MAX --> OK[OK]

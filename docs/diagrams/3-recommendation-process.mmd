@@ -1,0 +1,21 @@
+flowchart TD
+    A(["User asks for a recommendation"]) --> B{"Screening complete?<br/>pregnancy · conditions ·<br/>medications · allergies"}
+    B -- no --> C["Ask only the missing questions<br/>(one short message)"]
+    C --> D["User answers"] --> E["update_user_profile<br/>map answers to risk factors"] --> B
+    B -- yes --> F["search_products<br/>several phrasings + filters"]
+    F --> G["Safety engine labels every result<br/>for this user"]
+    G --> H["suitable<br/>(OK / CAUTION)"]
+    G --> I["needs doctor approval<br/>(DOCTOR_FIRST)"]
+    G --> J["not suitable<br/>(EXCLUDED)"]
+    I & J --> K["Explained to the user,<br/>never recommended"]
+    H --> L["compare_products on the shortlist<br/>doses · overlaps · upper limits ·<br/>diet · form · price"]
+    L --> M["Agent picks the best fit<br/>for the user's goals"]
+    M --> N["recommend_products"]
+    N --> O{"Code re-check:<br/>screening done and<br/>product recommendable?"}
+    O -- rejected --> K
+    O -- accepted --> P["Draft reply + product cards<br/>(caution warnings attached)"]
+    P --> Q{"Output review"}
+    Q -- pass --> R(["Reply + cards shown"])
+    Q -- revise --> S["Regenerate once<br/>with the problems listed"] --> Q2{"Review again"}
+    Q2 -- pass --> R
+    Q2 -- fail --> T(["Safe fallback reply,<br/>no cards"])

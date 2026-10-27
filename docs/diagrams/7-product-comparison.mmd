@@ -1,0 +1,10 @@
+flowchart LR
+    Q["Which is better for me,<br/>A or B? / Can I take both?"] --> C[compare_products]
+    C --> D1[Parse actives + doses<br/>per serving]
+    D1 --> D2[Scale to max label<br/>daily dose]
+    D2 --> D3[Shared vs unique<br/>actives]
+    D2 --> D4[Combined daily totals<br/>vs upper limits]
+    C --> D5[Safety verdict<br/>per product for this user]
+    C --> D6[Form, diet, price,<br/>label cautions]
+    D3 & D4 & D5 & D6 --> M[Agent reasons over the<br/>structured table + user's goals]
+    M --> Ans[Tailored answer:<br/>trade-offs, overlaps,<br/>what's excluded and why]

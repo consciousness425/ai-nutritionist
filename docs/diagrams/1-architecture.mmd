@@ -1,0 +1,31 @@
+flowchart TB
+    UI["<b>Browser: React + TypeScript UI</b><br/>chat · product cards · profile & trace panel"]
+
+    subgraph Backend["Python backend (FastAPI)"]
+        API["POST /api/chat"]
+        ORCH["Orchestrator (agent.py)<br/>runs the turn, keeps the session"]
+        GR["Guardrails<br/>emergency regex · triage · output review"]
+        TOOLS["Agent tools<br/>search · details · compare · update profile · recommend"]
+        SAFE["Safety engine<br/>deterministic rules"]
+        CAT["Catalogue + BM25 search"]
+        SESS[("Sessions<br/>profile + history")]
+    end
+
+    OPUS["<b>Claude Opus 5.5</b><br/>conversational agent"]
+    HAIKU["<b>Claude Haiku 5.5</b><br/>triage + review"]
+
+    PJ[("products.json<br/>scraped catalogue")]
+    SR[("safety_rules.yaml")]
+    UL[("upper_limits.yaml")]
+
+    UI -- "HTTP / JSON" --> API --> ORCH
+    ORCH --> SESS
+    ORCH -- "every message" --> GR
+    ORCH -- "tool calls" --> TOOLS
+    GR -- "Anthropic API<br/>or Claude Code CLI" --> HAIKU
+    ORCH -- "Anthropic API<br/>or Claude Code CLI" --> OPUS
+    TOOLS --> SAFE
+    TOOLS --> CAT
+    CAT --> PJ
+    SAFE --> SR
+    SAFE --> UL
